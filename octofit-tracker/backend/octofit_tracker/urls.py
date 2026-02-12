@@ -16,6 +16,11 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
+import os
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework.routers import DefaultRouter
+from rest_framework.reverse import reverse
 from octofit_tracker import views
 
 router = DefaultRouter()
@@ -28,5 +33,20 @@ router.register(r'workouts', views.WorkoutViewSet, basename='workout')
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
-    path('', views.api_root, name='api-root'),
+    path('', api_view(['GET'])(
+        lambda request, format=None: Response({
+            'users': _get_base_url(request) + 'users/',
+            'teams': _get_base_url(request) + 'teams/',
+            'activities': _get_base_url(request) + 'activities/',
+            'leaderboard': _get_base_url(request) + 'leaderboard/',
+            'workouts': _get_base_url(request) + 'workouts/',
+        })
+    ), name='api-root'),
 ]
+
+# Helper to get base url for API endpoints
+def _get_base_url(request):
+    codespace_name = os.environ.get('CODESPACE_NAME')
+    if codespace_name:
+        return f"https://{codespace_name}-8000.app.github.dev/api/"
+    return request.build_absolute_uri('/api/')
